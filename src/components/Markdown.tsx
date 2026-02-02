@@ -29,7 +29,7 @@ export function Markdown({ content }: { content: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       skipHtml
-      transformLinkUri={(uri) => sanitizeLink(uri) ?? ''}
+      urlTransform={(url) => sanitizeLink(url) ?? ''}
       components={{
         a({ href, children, ...props }) {
           const safeHref = sanitizeLink(href ?? '') ?? '#';
