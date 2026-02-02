@@ -17,6 +17,8 @@ export default function RootLayout({
           <nav className="nav">
             <a href="/">Skills Registry</a>
             <span className="meta">Decentralized skill index (v1)</span>
+            <a href="/docs">Docs</a>
+            <a href="/docs/operator">Operator Guide</a>
           </nav>
         </header>
         {children}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { listSkills } from '../src/lib/skills';
+import { listSkills, getSkillVersions } from '../src/lib/skills';
 import { parseLimit, parseList, parseOffset } from '../src/lib/pagination';
+import { PolicyBadge } from '../src/components/PolicyBadge';
 
 export default async function Home({
   searchParams
@@ -23,14 +24,28 @@ export default async function Home({
   );
 
   const skills = await listSkills({ query, tags, capabilities, limit, offset });
+  const latestStatuses = await Promise.all(
+    skills.map(async (skill) => ({
+      slug: skill.slug,
+      versions: await getSkillVersions(skill.slug)
+    }))
+  );
+
+  const latestBySlug = new Map(
+    latestStatuses.map((entry) => [entry.slug, entry.versions?.[0] ?? null])
+  );
 
   return (
-    <main>
+    <>
+      <main>
       <section className="card">
         <h1>Skills Registry</h1>
         <p className="meta">
-          Search and browse signed skill documents. Signatures prove provenance,
-          not safety.
+          A neutral, self-hostable registry for signed agent skills
+          (instructional knowledge), with verifiable provenance.
+        </p>
+        <p className="meta" style={{ marginTop: '0.5rem' }}>
+          <a href="/docs#what-is-a-skill">What is a skill?</a>
         </p>
         <form style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
           <input
@@ -76,12 +91,19 @@ export default async function Home({
                   </span>
                 ))}
               </div>
-              <p className="meta" style={{ marginTop: '0.75rem' }}>
-                Latest: {skill.latestVersion ?? 'n/a'} ·{' '}
-                {skill.latestPublishedAt
-                  ? new Date(skill.latestPublishedAt).toLocaleString()
-                  : 'unpublished'}
-              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {latestBySlug.get(skill.slug)?.verification.verified ? (
+                  <span className="badge badge-success">Verified signature</span>
+                ) : (
+                  <span className="badge badge-warning">Invalid or unsigned</span>
+                )}
+                <p className="meta" style={{ margin: 0 }}>
+                  Latest: {skill.latestVersion ?? 'n/a'} ·{' '}
+                  {skill.latestPublishedAt
+                    ? new Date(skill.latestPublishedAt).toLocaleString()
+                    : 'unpublished'}
+                </p>
+              </div>
             </article>
           ))}
           {skills.length === 0 && (
@@ -91,6 +113,17 @@ export default async function Home({
           )}
         </div>
       </section>
-    </main>
+      </main>
+      <footer style={{ padding: '1.5rem', borderTop: '1px solid #e5e7eb' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', gap: '1rem' }}>
+        <a href="/docs">Docs</a>
+        <a href="/docs/operator">Operator Guide</a>
+        <a href="https://github.com/example/skills-registry">GitHub</a>
+        <span style={{ marginLeft: 'auto' }}>
+          <PolicyBadge />
+        </span>
+      </div>
+    </footer>
+    </>
   );
 }

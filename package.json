@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:db": "bash scripts/dev-db.sh",
     "build": "next build",
     "start": "next start",
     "test": "vitest",
@@ -12,6 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force --skip-seed && npm run seed",
     "seed": "prisma db seed"
   },
   "dependencies": {

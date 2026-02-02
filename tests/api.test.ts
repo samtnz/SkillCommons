@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { prisma } from '../src/lib/db';
+import { resetRateLimit } from '../src/lib/rateLimit';
 import { GET as getSkills } from '../app/api/skills/route';
 import { GET as getSkill } from '../app/api/skills/[slug]/route';
 import { GET as getVersion } from '../app/api/skills/[slug]/versions/[version]/route';
@@ -19,6 +20,7 @@ describe('API endpoints', () => {
   });
 
   itIfDb('lists seeded skills', async () => {
+    resetRateLimit();
     const response = await getSkills(
       new Request('http://localhost/api/skills?limit=50')
     );
@@ -35,6 +37,7 @@ describe('API endpoints', () => {
   });
 
   itIfDb('returns verification status for skill versions', async () => {
+    resetRateLimit();
     const response = await getSkill(new Request('http://localhost/api/skills/unsafe-example'), {
       params: { slug: 'unsafe-example' }
     });
@@ -44,9 +47,11 @@ describe('API endpoints', () => {
     const first = json.data.versions[0];
 
     expect(first.verification.verified).toBe(false);
+    expect(first.provenance.signed).toBe(true);
   });
 
   itIfDb('returns invalid signature for the unsafe example version', async () => {
+    resetRateLimit();
     const version = await prisma.skillVersion.findFirst({
       where: { skill: { slug: 'unsafe-example' } }
     });
@@ -66,5 +71,6 @@ describe('API endpoints', () => {
     expect(json.data.verification.signatureValid).toBe(false);
     expect(json.data.verification.hashValid).toBe(true);
     expect(json.data.verification.verified).toBe(false);
+    expect(json.data.provenance.publicKey).toBeTruthy();
   });
 });

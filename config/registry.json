@@ -1,0 +1,6 @@
+{
+  "allowedTags": [],
+  "blockedSlugs": ["blocked-example"],
+  "blockedPublicKeys": [],
+  "showUnsigned": true
+}

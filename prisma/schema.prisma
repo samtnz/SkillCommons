@@ -46,3 +46,17 @@ model Endorsement {
 
   @@index([subjectSkillVersionId])
 }
+
+model PublishEvent {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  action      String
+  slug        String
+  version     String
+  contentHash String
+  actor       String
+  ip          String
+  userAgent   String
+
+  @@index([createdAt])
+}

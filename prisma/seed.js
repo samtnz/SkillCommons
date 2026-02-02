@@ -1,10 +1,44 @@
 import { PrismaClient } from '@prisma/client';
-import { createHash, generateKeyPairSync, sign } from 'crypto';
+import { createHash, createPrivateKey, createPublicKey, generateKeyPairSync, sign } from 'crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from 'fs';
+import { dirname } from 'path';
 
 const prisma = new PrismaClient();
 
 function hashMarkdown(markdown) {
   return createHash('sha256').update(Buffer.from(markdown, 'utf8')).digest();
+}
+
+function ensurePublisherKeypair() {
+  const keyPath = process.env.PUBLISHER_KEY_PATH || 'config/publisher.key';
+  if (!existsSync(keyPath)) {
+    const dir = dirname(keyPath);
+    if (dir && dir !== '.') {
+      mkdirSync(dir, { recursive: true });
+    }
+    const { privateKey } = generateKeyPairSync('ed25519');
+    const privateKeyBase64 = privateKey
+      .export({ type: 'pkcs8', format: 'der' })
+      .toString('base64');
+    const payload = JSON.stringify({ privateKey: privateKeyBase64 }, null, 2);
+    writeFileSync(keyPath, payload, { mode: 0o600 });
+    chmodSync(keyPath, 0o600);
+  }
+
+  const raw = JSON.parse(readFileSync(keyPath, 'utf8'));
+  const privateKey = raw.privateKey;
+  const privateKeyObj = createPrivateKey({
+    key: Buffer.from(privateKey, 'base64'),
+    format: 'der',
+    type: 'pkcs8'
+  });
+  const publicKey = createPublicKey(privateKeyObj);
+
+  return {
+    publicKey,
+    privateKey: privateKeyObj,
+    publicKeyBase64: publicKey.export({ type: 'spki', format: 'der' }).toString('base64')
+  };
 }
 
 function createKeypair() {
@@ -35,8 +69,7 @@ async function main() {
   await prisma.skill.deleteMany();
 
   const now = Date.now();
-  const moltbookKeypair = createKeypair();
-  const postgresKeypair = createKeypair();
+  const publisherKeypair = ensurePublisherKeypair();
   const unsafeKeypair = createKeypair();
   const otherKeypair = createKeypair();
 
@@ -53,13 +86,13 @@ async function main() {
           buildVersion({
             version: '1.0.0',
             markdown: `# Moltbook Posting\n\n## Checklist\n- Start with the outcome\n- Use short paragraphs\n- End with a clear question\n\n## Style\nAim for warm, precise language.`,
-            keypair: moltbookKeypair,
+            keypair: publisherKeypair,
             publishedAt: new Date(now - 1000 * 60 * 60 * 24 * 10)
           }),
           buildVersion({
             version: '1.1.0',
             markdown: `# Moltbook Posting\n\n## Checklist\n- Start with the outcome\n- Use short paragraphs\n- End with a clear question\n- Add a one-line summary\n\n## Style\nAim for warm, precise language. Prefer active voice.`,
-            keypair: moltbookKeypair,
+            keypair: publisherKeypair,
             publishedAt: new Date(now - 1000 * 60 * 60 * 24 * 2)
           })
         ]
@@ -80,7 +113,7 @@ async function main() {
           buildVersion({
             version: '1.0.0',
             markdown: `# Postgres Backup\n\n## Daily\n1. Run base backup at 02:00 UTC\n2. Verify checksum\n\n## Restore Drill\n- Restore to staging every Friday`,
-            keypair: postgresKeypair,
+            keypair: publisherKeypair,
             publishedAt: new Date(now - 1000 * 60 * 60 * 24 * 5)
           })
         ]

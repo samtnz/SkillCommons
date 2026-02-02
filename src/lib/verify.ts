@@ -15,7 +15,8 @@ export function verifySkillVersion(
   markdown: string,
   contentHash: string,
   signature: string,
-  publicKey: string
+  publicKey: string,
+  allowedPublicKeys?: string[]
 ): VerificationResult {
   const hashBytes = hashMarkdown(markdown);
   const computedHashHex = hashBytes.toString('hex');
@@ -30,6 +31,12 @@ export function verifySkillVersion(
         publicKey
       );
     } catch {
+      signatureValid = false;
+    }
+  }
+
+  if (allowedPublicKeys && allowedPublicKeys.length > 0) {
+    if (!allowedPublicKeys.includes(publicKey)) {
       signatureValid = false;
     }
   }
