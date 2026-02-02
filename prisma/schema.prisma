@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Skill {
+  id                String         @id @default(uuid())
+  slug              String         @unique
+  title             String
+  description       String
+  tags              String[]
+  capabilities      String[]
+  authorDisplayName String
+  createdAt         DateTime       @default(now())
+  versions          SkillVersion[]
+}
+
+model SkillVersion {
+  id              String   @id @default(uuid())
+  skillId         String
+  version         String
+  contentMarkdown String
+  contentHash     String
+  signature       String
+  publicKey       String
+  publishedAt     DateTime @default(now())
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, version])
+  @@index([contentHash])
+}
+
+model Endorsement {
+  id                    String   @id @default(uuid())
+  subjectSkillVersionId String
+  attester              String
+  attestationType       String
+  payloadJson           Json
+  signature             String
+  createdAt             DateTime @default(now())
+
+  @@index([subjectSkillVersionId])
+}

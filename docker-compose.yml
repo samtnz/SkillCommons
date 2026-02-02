@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: skills
+      POSTGRES_PASSWORD: skills
+      POSTGRES_DB: skills_registry
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://skills:skills@db:5432/skills_registry
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - db
+    command: npm run dev
+
+volumes:
+  db_data:
